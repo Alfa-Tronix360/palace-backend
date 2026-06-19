@@ -87,6 +87,12 @@ def create_table(
     return table
 
 
+PRICE_TIER_MAP = {
+    "standard": 15000,
+    "premium": 25000,
+    "vip": 45000,
+}
+
 @router.get("/tables/availability", response_model=list[VenueTableResponse])
 def table_availability(
     date: str,
@@ -103,7 +109,7 @@ def table_availability(
         .filter(PalaceReservation.ends_at > starts_at)
         .subquery()
     )
-    return (
+    tables = (
         db.query(VenueTable)
         .filter(VenueTable.status == TableStatus.available)
         .filter(VenueTable.capacity >= guests)
@@ -111,6 +117,11 @@ def table_availability(
         .order_by(VenueTable.capacity.asc(), VenueTable.number.asc())
         .all()
     )
+    result = []
+    for t in tables:
+        t.__dict__['price'] = PRICE_TIER_MAP.get(t.price_tier or 'standard', 15000)
+        result.append(t)
+    return result
 
 
 @router.patch("/tables/{table_id}", response_model=VenueTableResponse)

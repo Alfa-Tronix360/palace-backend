@@ -93,6 +93,7 @@ class VenueTableUpdate(CamelModel):
 class VenueTableResponse(VenueTableBase):
     id: int
     created_at: datetime
+    price: Optional[float] = None
 
 
 class TicketSeatResponse(CamelModel):
@@ -322,6 +323,38 @@ class MenuItemResponse(MenuItemBase):
     created_at: datetime
 
 
+class SiteImageResponse(CamelModel):
+    key: str
+    image_url: str
+    updated_at: datetime
+
+
+class SiteImageUpdate(CamelModel):
+    image_url: str
+
+
+class TransferRequestCreate(CamelModel):
+    client_id: int
+    vehicle_type: str
+    vehicle_model: Optional[str] = None
+    date: datetime
+    time: str
+    pickup_location: str
+    notes: Optional[str] = None
+
+
+class TransferRequestResponse(CamelModel):
+    id: int
+    client_id: int
+    vehicle_type: str
+    vehicle_model: Optional[str] = None
+    date: datetime
+    time: str
+    pickup_location: str
+    notes: Optional[str] = None
+    status: str
+    created_at: datetime
+    
 class ReservationApiCreate(CamelModel):
     clientId: Optional[int] = None
     tableId: int

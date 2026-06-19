@@ -14,7 +14,10 @@ class RoleUsuario(enum.Enum):
     cliente = "cliente"
     client = "client"
     staff = "staff"
-    parceiro="parceiro"
+    parceiro = "parceiro"
+    chefe_sala = "chefe_sala"
+    chefe_cozinha = "chefe_cozinha"
+    bar = "bar"
 
 
 class EstadoParceiro(enum.Enum):
@@ -173,6 +176,30 @@ class MenuItem(Base):
     featured = Column(Boolean, default=False, nullable=False)
     allergens_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class SiteImage(Base):
+    __tablename__ = "site_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String, unique=True, nullable=False, index=True)
+    image_url = Column(String, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)   
+
+class TransferRequest(Base):
+    __tablename__ = "transfer_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    vehicle_type = Column(String, nullable=False)
+    vehicle_model = Column(String, nullable=True)
+    date = Column(DateTime, nullable=False)
+    time = Column(String, nullable=False)
+    pickup_location = Column(String, nullable=False)
+    notes = Column(Text, nullable=True)
+    status = Column(String, default="pending", nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    client = relationship("Usuario")     
 
 class PublishedEvent(Base):
     __tablename__ = "published_events"

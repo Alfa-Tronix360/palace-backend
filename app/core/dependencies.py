@@ -72,3 +72,58 @@ def get_staff(
             detail=traduzir("acesso_negado_staff", lingua)
         )
     return usuario_atual
+
+
+def get_chefe_sala(
+    usuario_atual: Usuario = Depends(get_usuario_atual),
+    lingua: str = Depends(get_lingua)
+) -> Usuario:
+    if usuario_atual.role not in [RoleUsuario.chefe_sala, RoleUsuario.admin]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=traduzir("acesso_negado_admin", lingua)
+        )
+    return usuario_atual
+
+
+def get_chefe_cozinha(
+    usuario_atual: Usuario = Depends(get_usuario_atual),
+    lingua: str = Depends(get_lingua)
+) -> Usuario:
+    if usuario_atual.role not in [RoleUsuario.chefe_cozinha, RoleUsuario.admin]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=traduzir("acesso_negado_admin", lingua)
+        )
+    return usuario_atual
+
+
+def get_bar(
+    usuario_atual: Usuario = Depends(get_usuario_atual),
+    lingua: str = Depends(get_lingua)
+) -> Usuario:
+    if usuario_atual.role not in [RoleUsuario.bar, RoleUsuario.admin]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=traduzir("acesso_negado_admin", lingua)
+        )
+    return usuario_atual
+
+
+def get_equipa(
+    usuario_atual: Usuario = Depends(get_usuario_atual),
+    lingua: str = Depends(get_lingua)
+) -> Usuario:
+    """Qualquer membro da equipa operacional (chefe_sala, chefe_cozinha, bar, staff, admin)"""
+    if usuario_atual.role not in [
+        RoleUsuario.chefe_sala,
+        RoleUsuario.chefe_cozinha,
+        RoleUsuario.bar,
+        RoleUsuario.staff,
+        RoleUsuario.admin,
+    ]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=traduzir("acesso_negado_admin", lingua)
+        )
+    return usuario_atual

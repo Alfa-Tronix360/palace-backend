@@ -20,6 +20,9 @@ from app.routers.tickets_router import router as tickets_router
 from app.routers.reports_router import router as reports_router
 from app.routers.employees_router import router as employees_router
 from app.routers.menu_router import router as menu_router
+from app.routers.operacional_router import router as operacional_router
+from app.routers.transfer_router import router as transfer_router
+from app.routers.site_images_router import router as site_images_router
 from app.routers.clients_router import router as clients_router
 from app.routers.payments_api_router import router as payments_api_router
 from app.routers.events_router import router as events_router
@@ -72,7 +75,9 @@ app.include_router(menu_router)
 app.include_router(clients_router)
 app.include_router(payments_api_router)
 app.include_router(events_router)
-
+app.include_router(site_images_router)
+app.include_router(transfer_router)
+app.include_router(operacional_router)
 if (FRONTEND_DIST / "assets").exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="frontend-assets")
 
