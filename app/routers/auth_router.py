@@ -7,7 +7,7 @@ from app.repositories.usuario_repository import buscar_usuario_por_email, criar_
 from app.core.dependencies import get_usuario_atual
 from app.models.models import PalaceReservation, RoleUsuario, Usuario
 from app.integrations.email import email_boas_vindas_cliente
-
+import asyncio
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
@@ -55,10 +55,8 @@ async def register(usuario: UsuarioCreate, db: Session = Depends(get_db)):
     senha_hash = hash_senha(usuario.senha)
     novo_usuario = criar_usuario_com_hash(db, usuario, senha_hash)
 
-    try:
-        await email_boas_vindas_cliente(novo_usuario.email, novo_usuario.nome)
-    except Exception as e:
-        print(f"Erro ao enviar email de boas-vindas: {e}")
+    # Email em background — não bloqueia a resposta
+    asyncio.create_task(email_boas_vindas_cliente(novo_usuario.email, novo_usuario.nome))
 
     return to_frontend_user(novo_usuario, db)
 
