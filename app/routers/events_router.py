@@ -120,3 +120,16 @@ def update_event(
     db.commit()
     db.refresh(event)
     return to_response(event)
+
+@router.delete("/{event_id}")
+def delete_event(
+    event_id: int,
+    db: Session = Depends(get_db),
+    _admin: Usuario = Depends(get_admin),
+):
+    event = db.query(PrivateEventRequest).filter(PrivateEventRequest.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento nao encontrado")
+    db.delete(event)
+    db.commit()
+    return {"message": "Evento eliminado com sucesso"}

@@ -105,3 +105,10 @@ def unpublish_event(event_id: int, db: Session = Depends(get_db), _admin=Depends
 def list_event_seats(event_id: int, db: Session = Depends(get_db)):
     event = get_event_or_404(db, event_id)
     return event.seats
+
+@router.delete("/{event_id}")
+def delete_event(event_id: int, db: Session = Depends(get_db), _admin=Depends(get_admin)):
+    event = get_event_or_404(db, event_id)
+    db.delete(event)
+    db.commit()
+    return {"message": "Evento eliminado com sucesso"}
