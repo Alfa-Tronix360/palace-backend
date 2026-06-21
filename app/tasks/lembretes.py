@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models.models import PalaceReservation, StatusReserva, Usuario
 from app.integrations.email import email_lembrete_reserva
+from app.tasks.palace_tasks import marcar_noshows, enviar_lembretes_palace, cancelar_reservas_expiradas
+
 
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -61,18 +63,25 @@ def iniciar_scheduler():
         return
 
     scheduler.add_job(
-        verificar_lembretes,
+        enviar_lembretes_palace,
         IntervalTrigger(hours=1),
-        id="lembretes",
+        id="lembretes_palace",
         replace_existing=True
     )
 
     scheduler.add_job(
-        verificar_subscricoes_expiradas,
-        IntervalTrigger(hours=24),
-        id="subscricoes_expiradas",
+        marcar_noshows,
+        IntervalTrigger(minutes=15),
+        id="noshows",
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        cancelar_reservas_expiradas,
+        IntervalTrigger(hours=1),
+        id="cancelamentos_palace",
         replace_existing=True
     )
 
     scheduler.start()
-    print("[Scheduler] Iniciado — lembretes e subscrições activos")
+    print("[Scheduler] Iniciado — lembretes, no-shows e cancelamentos activos")

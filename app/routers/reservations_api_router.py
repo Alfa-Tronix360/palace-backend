@@ -55,7 +55,7 @@ def to_response(reserva: PalaceReservation) -> ReservationApiResponse:
 
 
 def ensure_available(db: Session, table_id: int, starts_at: datetime, ends_at: datetime, ignore_id: int | None = None):
-    table = db.query(VenueTable).filter(VenueTable.id == table_id).first()
+    table = db.query(VenueTable).with_for_update().filter(VenueTable.id == table_id).first()
     if not table:
         raise HTTPException(status_code=404, detail="Mesa nao encontrada")
 
