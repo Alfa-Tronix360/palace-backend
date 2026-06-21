@@ -37,6 +37,24 @@ class StatusPagamento(enum.Enum):
     pago = "pago"
     cancelado = "cancelado"
 
+
+class Review(Base):
+    __tablename__ = "reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
+    reservation_id = Column(Integer, ForeignKey("palace_reservations.id"), nullable=False)
+    rating = Column(Integer, nullable=False)
+    comment = Column(Text, nullable=True)
+    service = Column(Integer, nullable=False)
+    atmosphere = Column(Integer, nullable=False)
+    food = Column(Integer, nullable=False)
+    drinks = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    client = relationship("Usuario")
+    reservation = relationship("PalaceReservation")
+    
 class TableStatus(enum.Enum):
     available = "available"
     reserved = "reserved"

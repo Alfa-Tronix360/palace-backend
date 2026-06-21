@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.models.models import PalaceReservation, StatusReserva
+from sqlalchemy import extract
 from app.core.dependencies import get_admin
 from app.models.models import (
     DigitalTicket,
@@ -210,3 +212,43 @@ def ticket_validation(eventId: int | None = None, db: Session = Depends(get_db),
         "used_tickets": used.scalar() or 0,
         "scan_results": [{"result": row.result, "count": row.count} for row in rows],
     }
+
+@router.get("/occupancy/weekly")
+def occupancy_weekly(db: Session = Depends(get_db), _admin=Depends(get_admin)):
+    from datetime import date, timedelta
+    today = date.today()
+    result = []
+    for i in range(6, 0, -1):
+        week_start = today - timedelta(weeks=i)
+        week_end = week_start + timedelta(days=7)
+        total = db.query(func.count(PalaceReservation.id)).filter(
+            PalaceReservation.starts_at >= week_start,
+            PalaceReservation.starts_at < week_end,
+            PalaceReservation.status != StatusReserva.cancelada,
+        ).scalar() or 0
+        total_tables = db.query(func.count(VenueTable.id)).scalar() or 1
+        taxa = min(100, round((total / (total_tables * 7)) * 100))
+        result.append({"week": f"S{7 - i}", "taxa": taxa})
+    return result
+
+
+@router.get("/cancellations/monthly")
+def cancellations_monthly(db: Session = Depends(get_db), _admin=Depends(get_admin)):
+    from datetime import date
+    months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    today = date.today()
+    result = []
+    for i in range(5, -1, -1):
+        month = (today.month - i - 1) % 12 + 1
+        year = today.year if today.month - i > 0 else today.year - 1
+        cancelamentos = db.query(func.count(PalaceReservation.id)).filter(
+            PalaceReservation.status == StatusReserva.cancelada,
+            extract('month', PalaceReservation.starts_at) == month,
+            extract('year', PalaceReservation.starts_at) == year,
+        ).scalar() or 0
+        result.append({
+            "month": months[month - 1],
+            "cancelamentos": cancelamentos,
+            "noShows": 0,
+        })
+    return result

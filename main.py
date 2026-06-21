@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import Base, engine
 from app.routers.usuario_router import router as usuario_router
 from app.routers.reserva_router import router as reserva_router
+from app.routers.reviews_router import router as reviews_router
 from app.routers.pagamento_router import router as pagamento_router
 from app.routers.auth_router import router as auth_router
 from app.routers.parceiro_router import router as parceiro_router
@@ -78,6 +79,7 @@ app.include_router(events_router)
 app.include_router(site_images_router)
 app.include_router(transfer_router)
 app.include_router(operacional_router)
+app.include_router(reviews_router)
 if (FRONTEND_DIST / "assets").exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="frontend-assets")
 
