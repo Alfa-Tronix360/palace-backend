@@ -131,3 +131,29 @@ def create_employee_order(
     db.commit()
     db.refresh(order)
     return order_to_response(order)
+
+
+@router.post("/employees/{employee_id}/toggle-table/{table_id}", response_model=EmployeeResponse)
+def toggle_employee_table(
+    employee_id: int,
+    table_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_admin),
+):
+    from app.models.models import EmployeeTable
+    employee = get_employee_or_404(db, employee_id)
+    get_table_or_404(db, table_id)
+
+    existing = db.query(EmployeeTable).filter(
+        EmployeeTable.employee_id == employee_id,
+        EmployeeTable.table_id == table_id,
+    ).first()
+
+    if existing:
+        db.delete(existing)
+    else:
+        db.add(EmployeeTable(employee_id=employee_id, table_id=table_id))
+
+    db.commit()
+    db.refresh(employee)
+    return employee

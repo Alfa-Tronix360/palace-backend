@@ -211,9 +211,15 @@ class EmployeeAssignTable(CamelModel):
     table_id: Optional[int] = None
 
 
+class EmployeeTableResponse(CamelModel):
+    id: int
+    table_id: int
+    table_number: int = 0
+
 class EmployeeResponse(EmployeeBase):
     id: int
     created_at: datetime
+    assigned_tables: list[EmployeeTableResponse] = []
 
 
 class EmployeeOrderItem(CamelModel):

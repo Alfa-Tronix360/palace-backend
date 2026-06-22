@@ -330,6 +330,18 @@ class Employee(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     table = relationship("VenueTable")
     orders = relationship("EmployeeOrder", back_populates="employee")
+    assigned_tables = relationship("EmployeeTable", back_populates="employee", cascade="all, delete-orphan")
+
+class EmployeeTable(Base):
+    __tablename__ = "employee_tables"
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
+    table_id = Column(Integer, ForeignKey("venue_tables.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    employee = relationship("Employee", back_populates="assigned_tables")
+    table = relationship("VenueTable")    
 
 class EmployeeOrder(Base):
     __tablename__ = "employee_orders"
