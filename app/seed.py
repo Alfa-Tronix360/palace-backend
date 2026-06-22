@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from app.core.security import hash_senha
 from app.models.models import (
+    Company,
     Employee,
     EmployeeRole,
     MenuCategory,
