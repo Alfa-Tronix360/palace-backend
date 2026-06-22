@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_admin, get_usuario_atual
+from app.core.tenant import get_company_id
 from app.database import get_db
 from app.models.models import PalaceReservation, RoleUsuario, Usuario
 from app.schemas.schemas import FrontendUserResponse
@@ -36,12 +37,17 @@ def to_frontend_user(usuario: Usuario, db: Session) -> FrontendUserResponse:
 @router.get("", response_model=list[FrontendUserResponse])
 @router.get("/", response_model=list[FrontendUserResponse])
 def list_clients(
+    request: Request,
     vip: bool | None = None,
     search: str | None = None,
     db: Session = Depends(get_db),
     _admin: Usuario = Depends(get_admin),
 ):
-    query = db.query(Usuario).filter(Usuario.role.in_([RoleUsuario.cliente, RoleUsuario.client]))
+    company_id = get_company_id(request, db)
+    query = db.query(Usuario).filter(
+        Usuario.role.in_([RoleUsuario.cliente, RoleUsuario.client]),
+        Usuario.company_id == company_id,
+    )
     if search:
         like = f"%{search}%"
         query = query.filter(
@@ -99,6 +105,10 @@ def delete_client(
     usuario = db.query(Usuario).filter(Usuario.id == client_id).first()
     if not usuario:
         raise HTTPException(status_code=404, detail="Cliente nao encontrado")
+    
+    from app.models.models import PalaceReservation
+    db.query(PalaceReservation).filter(PalaceReservation.client_id == client_id).delete()
+    
     db.delete(usuario)
     db.commit()
     return {"message": "Cliente eliminado com sucesso"}

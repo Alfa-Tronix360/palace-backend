@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.core.dependencies import get_admin, get_usuario_atual
+from app.core.tenant import get_company_id
 from app.models.models import PalaceReservation, StatusReserva, Usuario, VenueTable
 from app.schemas.palace_schemas import (
     ReservationApiCreate,
@@ -10,8 +11,8 @@ from app.schemas.palace_schemas import (
     ReservationApiUpdate,
 )
 from app.routers.auth_router import frontend_role
-router = APIRouter(prefix="/reservations", tags=["Reservations API"])
 
+router = APIRouter(prefix="/reservations", tags=["Reservations API"])
 
 STATUS_TO_API = {
     StatusReserva.pendente: "pending",
@@ -75,12 +76,14 @@ def ensure_available(db: Session, table_id: int, starts_at: datetime, ends_at: d
 @router.get("", response_model=list[ReservationApiResponse])
 @router.get("/", response_model=list[ReservationApiResponse])
 def list_reservations(
+    request: Request,
     clientId: str | None = None,
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_usuario_atual),
 ):
+    company_id = get_company_id(request, db)
     is_admin = frontend_role(usuario_atual.role) == "admin"
-    query = db.query(PalaceReservation)
+    query = db.query(PalaceReservation).filter(PalaceReservation.company_id == company_id)
 
     if is_admin:
         if clientId:
@@ -91,10 +94,17 @@ def list_reservations(
     reservas = query.order_by(PalaceReservation.starts_at.desc()).all()
     return [to_response(reserva) for reserva in reservas]
 
+
 @router.get("/my", response_model=list[ReservationApiResponse])
-def my_reservations(db: Session = Depends(get_db), usuario_atual: Usuario = Depends(get_usuario_atual)):
+def my_reservations(
+    request: Request,
+    db: Session = Depends(get_db),
+    usuario_atual: Usuario = Depends(get_usuario_atual),
+):
+    company_id = get_company_id(request, db)
     reservas = (
         db.query(PalaceReservation)
+        .filter(PalaceReservation.company_id == company_id)
         .filter(PalaceReservation.client_id == usuario_atual.id)
         .order_by(PalaceReservation.starts_at.desc())
         .all()
@@ -114,6 +124,7 @@ def get_reservation(reservation_id: int, db: Session = Depends(get_db), _user: U
 @router.post("/", response_model=ReservationApiResponse, status_code=201)
 def create_reservation(
     payload: ReservationApiCreate,
+    request: Request,
     db: Session = Depends(get_db),
     usuario_atual: Usuario = Depends(get_usuario_atual),
 ):
@@ -125,6 +136,8 @@ def create_reservation(
     if not client:
         raise HTTPException(status_code=404, detail="Cliente nao encontrado")
 
+    company_id = get_company_id(request, db)
+
     reserva = PalaceReservation(
         client_id=client.id,
         table_id=payload.tableId,
@@ -133,6 +146,7 @@ def create_reservation(
         guests=payload.guests,
         status=StatusReserva.pendente,
         notes=payload.notes,
+        company_id=company_id,
     )
     db.add(reserva)
     db.commit()

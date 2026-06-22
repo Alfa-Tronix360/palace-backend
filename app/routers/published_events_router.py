@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.core.dependencies import get_admin
+from app.core.tenant import get_company_id
 from app.models.models import EventSeat, PublishedEvent, TicketSeatStatus, VenueTable
 from app.schemas.palace_schemas import (
     PublishedEventCreate,
@@ -28,8 +29,7 @@ def get_event_or_404(db: Session, event_id: int) -> PublishedEvent:
 def sync_event_seats(db: Session, event: PublishedEvent):
     if event.seats:
         return
-
-    tables = db.query(VenueTable).order_by(VenueTable.number.asc()).all()
+    tables = db.query(VenueTable).filter(VenueTable.company_id == event.company_id).order_by(VenueTable.number.asc()).all()
     for table in tables:
         seat = EventSeat(
             event_id=event.id,
@@ -47,10 +47,12 @@ def sync_event_seats(db: Session, event: PublishedEvent):
 
 @router.get("", response_model=list[PublishedEventResponse])
 @router.get("/", response_model=list[PublishedEventResponse])
-def list_events(db: Session = Depends(get_db)):
+def list_events(request: Request, db: Session = Depends(get_db)):
+    company_id = get_company_id(request, db)
     return (
         db.query(PublishedEvent)
         .options(joinedload(PublishedEvent.seats))
+        .filter(PublishedEvent.company_id == company_id)
         .order_by(PublishedEvent.date.desc())
         .all()
     )
@@ -60,10 +62,12 @@ def list_events(db: Session = Depends(get_db)):
 @router.post("/", response_model=PublishedEventResponse, status_code=201)
 def create_event(
     payload: PublishedEventCreate,
+    request: Request,
     db: Session = Depends(get_db),
     _admin=Depends(get_admin),
 ):
-    event = PublishedEvent(**payload.model_dump())
+    company_id = get_company_id(request, db)
+    event = PublishedEvent(**payload.model_dump(), company_id=company_id)
     db.add(event)
     db.commit()
     db.refresh(event)
@@ -105,6 +109,7 @@ def unpublish_event(event_id: int, db: Session = Depends(get_db), _admin=Depends
 def list_event_seats(event_id: int, db: Session = Depends(get_db)):
     event = get_event_or_404(db, event_id)
     return event.seats
+
 
 @router.delete("/{event_id}")
 def delete_event(event_id: int, db: Session = Depends(get_db), _admin=Depends(get_admin)):

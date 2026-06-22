@@ -4,6 +4,15 @@ from datetime import datetime
 from app.database import Base
 import enum
 
+class Company(Base):
+    __tablename__ = "companies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    slug = Column(String, unique=True, nullable=False)
+    domain = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class TipoPreco(enum.Enum):
     por_hora = "por_hora"
     por_noite = "por_noite"
@@ -121,6 +130,7 @@ class Usuario(Base):
     __tablename__ = "usuarios"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     nome = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False)
     telefone = Column(String, nullable=True)
@@ -132,7 +142,8 @@ class Usuario(Base):
 
 class VenueArea(Base):
     __tablename__ = "venue_areas"
-
+    
+    
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     shape = Column(Enum(VenueAreaShape), default=VenueAreaShape.rectangle, nullable=False)
@@ -144,13 +155,14 @@ class VenueArea(Base):
     ticket_price = Column(Float, default=0.0, nullable=False)
     description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     tables = relationship("VenueTable", back_populates="area")
 
 class VenueTable(Base):
     __tablename__ = "venue_tables"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     number = Column(Integer, unique=True, nullable=False)
     capacity = Column(Integer, nullable=False)
     location = Column(Enum(TableLocation), default=TableLocation.indoor, nullable=False)
@@ -169,6 +181,7 @@ class PalaceReservation(Base):
     __tablename__ = "palace_reservations"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     client_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     table_id = Column(Integer, ForeignKey("venue_tables.id"), nullable=False)
     starts_at = Column(DateTime, nullable=False)
@@ -183,8 +196,9 @@ class PalaceReservation(Base):
 
 class MenuItem(Base):
     __tablename__ = "menu_items"
-
+    
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=False)
     category = Column(Enum(MenuCategory), nullable=False)
@@ -223,6 +237,7 @@ class PublishedEvent(Base):
     __tablename__ = "published_events"
 
     id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     title = Column(String, nullable=False)
     date = Column(DateTime, nullable=False)
     time = Column(String, nullable=False)
@@ -286,7 +301,7 @@ class PrivateEventRequest(Base):
     budget = Column(Float, nullable=True)
     deposit_paid = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     client = relationship("Usuario")
 
 class TicketScan(Base):
@@ -312,7 +327,7 @@ class Employee(Base):
     table_id = Column(Integer, ForeignKey("venue_tables.id"), nullable=True)
     active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     table = relationship("VenueTable")
     orders = relationship("EmployeeOrder", back_populates="employee")
 

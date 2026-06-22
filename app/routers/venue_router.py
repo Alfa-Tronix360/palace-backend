@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.core.dependencies import get_admin, get_usuario_atual
+from app.core.tenant import get_company_id
 from app.models.models import PalaceReservation, StatusReserva, VenueArea, VenueTable, TableStatus
 from app.schemas.palace_schemas import (
     VenueAreaCreate,
@@ -23,17 +24,20 @@ def apply_updates(model, data):
 
 
 @router.get("/areas", response_model=list[VenueAreaResponse])
-def list_areas(db: Session = Depends(get_db)):
-    return db.query(VenueArea).order_by(VenueArea.id.asc()).all()
+def list_areas(request: Request, db: Session = Depends(get_db)):
+    company_id = get_company_id(request, db)
+    return db.query(VenueArea).filter(VenueArea.company_id == company_id).order_by(VenueArea.id.asc()).all()
 
 
 @router.post("/areas", response_model=VenueAreaResponse, status_code=201)
 def create_area(
     payload: VenueAreaCreate,
+    request: Request,
     db: Session = Depends(get_db),
     _admin=Depends(get_admin),
 ):
-    area = VenueArea(**payload.model_dump())
+    company_id = get_company_id(request, db)
+    area = VenueArea(**payload.model_dump(), company_id=company_id)
     db.add(area)
     db.commit()
     db.refresh(area)
@@ -67,20 +71,26 @@ def delete_area(area_id: int, db: Session = Depends(get_db), _admin=Depends(get_
 
 
 @router.get("/tables", response_model=list[VenueTableResponse])
-def list_tables(db: Session = Depends(get_db)):
-    return db.query(VenueTable).order_by(VenueTable.number.asc()).all()
+def list_tables(request: Request, db: Session = Depends(get_db)):
+    company_id = get_company_id(request, db)
+    return db.query(VenueTable).filter(VenueTable.company_id == company_id).order_by(VenueTable.number.asc()).all()
 
 
 @router.post("/tables", response_model=VenueTableResponse, status_code=201)
 def create_table(
     payload: VenueTableCreate,
+    request: Request,
     db: Session = Depends(get_db),
     _admin=Depends(get_admin),
 ):
-    exists = db.query(VenueTable).filter(VenueTable.number == payload.number).first()
+    company_id = get_company_id(request, db)
+    exists = db.query(VenueTable).filter(
+        VenueTable.number == payload.number,
+        VenueTable.company_id == company_id
+    ).first()
     if exists:
         raise HTTPException(status_code=400, detail="Numero de mesa ja existe")
-    table = VenueTable(**payload.model_dump())
+    table = VenueTable(**payload.model_dump(), company_id=company_id)
     db.add(table)
     db.commit()
     db.refresh(table)
@@ -93,13 +103,16 @@ PRICE_TIER_MAP = {
     "vip": 45000,
 }
 
+
 @router.get("/tables/availability", response_model=list[VenueTableResponse])
 def table_availability(
+    request: Request,
     date: str,
     time: str,
     guests: int,
     db: Session = Depends(get_db),
 ):
+    company_id = get_company_id(request, db)
     starts_at = datetime.fromisoformat(f"{date}T{time}")
     ends_at = starts_at + timedelta(hours=2)
     busy_table_ids = (
@@ -107,10 +120,12 @@ def table_availability(
         .filter(PalaceReservation.status != StatusReserva.cancelada)
         .filter(PalaceReservation.starts_at < ends_at)
         .filter(PalaceReservation.ends_at > starts_at)
+        .filter(PalaceReservation.company_id == company_id)
         .subquery()
     )
     tables = (
         db.query(VenueTable)
+        .filter(VenueTable.company_id == company_id)
         .filter(VenueTable.status == TableStatus.available)
         .filter(VenueTable.capacity >= guests)
         .filter(VenueTable.id.not_in(busy_table_ids))
@@ -129,7 +144,7 @@ def update_table(
     table_id: int,
     payload: VenueTableUpdate,
     db: Session = Depends(get_db),
-    _admin=Depends(get_usuario_atual),  # ← muda aqui
+    _admin=Depends(get_usuario_atual),
 ):
     table = db.query(VenueTable).filter(VenueTable.id == table_id).first()
     if not table:
