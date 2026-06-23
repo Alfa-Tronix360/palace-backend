@@ -112,3 +112,39 @@ def delete_client(
     db.delete(usuario)
     db.commit()
     return {"message": "Cliente eliminado com sucesso"}
+
+
+@router.post("/find-or-create", response_model=FrontendUserResponse)
+def find_or_create_client(
+    payload: dict,
+    request: Request,
+    db: Session = Depends(get_db),
+    _user: Usuario = Depends(get_usuario_atual),
+):
+    from app.core.security import hash_senha
+    name = payload.get("name", "").strip()
+    phone = payload.get("phone", "").strip()
+    
+    if not name or not phone:
+        raise HTTPException(status_code=400, detail="Nome e telefone obrigatorios")
+
+    # Procura por telefone
+    existing = db.query(Usuario).filter(Usuario.telefone == phone).first()
+    if existing:
+        return to_frontend_user(existing, db)
+
+    # Cria novo cliente
+    company_id = get_company_id(request, db)
+    email = f"tel.{phone.replace('+', '').replace(' ', '')}@reservaao.local"
+    novo = Usuario(
+        nome=name,
+        email=email,
+        telefone=phone,
+        senha=hash_senha("123456"),
+        role=RoleUsuario.client,
+        company_id=company_id,
+    )
+    db.add(novo)
+    db.commit()
+    db.refresh(novo)
+    return to_frontend_user(novo, db)
