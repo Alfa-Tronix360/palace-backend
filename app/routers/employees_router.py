@@ -174,3 +174,14 @@ def toggle_employee_table(
         joinedload(Employee.assigned_tables).joinedload(EmployeeTable.table)
     ).filter(Employee.id == employee_id).first()
     return to_employee_response(employees)
+
+@router.delete("/employees/{employee_id}")
+def delete_employee(
+    employee_id: int,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_admin),
+):
+    employee = get_employee_or_404(db, employee_id)
+    db.delete(employee)
+    db.commit()
+    return {"message": "Funcionario eliminado com sucesso"}
