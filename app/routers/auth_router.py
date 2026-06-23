@@ -20,6 +20,8 @@ def frontend_role(role: RoleUsuario) -> str:
         return "staff"
     if role in [RoleUsuario.chefe_sala, RoleUsuario.chefe_cozinha, RoleUsuario.bar]:
         return role.value
+    if role == RoleUsuario.rececionista:
+        return "rececionista"
     return "client"
 
 

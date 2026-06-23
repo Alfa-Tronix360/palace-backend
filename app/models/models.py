@@ -19,7 +19,7 @@ class TipoPreco(enum.Enum):
     preco_fixo = "preco_fixo"
 
 class RoleUsuario(enum.Enum):
-    admin = "admin"
+   admin = "admin"
     cliente = "cliente"
     client = "client"
     staff = "staff"
@@ -27,6 +27,7 @@ class RoleUsuario(enum.Enum):
     chefe_sala = "chefe_sala"
     chefe_cozinha = "chefe_cozinha"
     bar = "bar"
+    rececionista = "rececionista"
 
 
 class EstadoParceiro(enum.Enum):

@@ -49,6 +49,7 @@ def seed_users(db: Session) -> None:
         ("Bartender", "bar@reservaao.local", "+244900000006", RoleUsuario.bar, palace),
         ("Administrador NOA", "admin@noa.local", "+244900000007", RoleUsuario.admin, noa),
         ("Cliente NOA", "cliente@noa.local", "+244900000008", RoleUsuario.client, noa),
+        ("Rececionista", "rececionista@reservaao.local", "+244900000007", RoleUsuario.rececionista, palace),
     ]
     for name, email, phone, role, company in users:
         exists = db.query(Usuario).filter(Usuario.email == email).first()
