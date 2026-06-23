@@ -1,9 +1,9 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.core.dependencies import get_admin
-from app.models.models import Employee, EmployeeOrder, VenueTable
+from app.models.models import Employee, EmployeeOrder, EmployeeTable, VenueTable
 from app.schemas.palace_schemas import (
     EmployeeAssignTable,
     EmployeeCreate,
@@ -31,6 +31,26 @@ def get_table_or_404(db: Session, table_id: int) -> VenueTable:
     return table
 
 
+def to_employee_response(employee: Employee) -> dict:
+    return {
+        "id": employee.id,
+        "name": employee.name,
+        "phone": employee.phone,
+        "role": employee.role,
+        "table_id": employee.table_id,
+        "active": employee.active,
+        "created_at": employee.created_at,
+        "assigned_tables": [
+            {
+                "id": at.id,
+                "table_id": at.table_id,
+                "table_number": at.table.number if at.table else 0,
+            }
+            for at in employee.assigned_tables
+        ],
+    }
+
+
 def order_to_response(order: EmployeeOrder) -> EmployeeOrderResponse:
     items = [EmployeeOrderItem(**item) for item in json.loads(order.items_json)]
     return EmployeeOrderResponse(
@@ -48,19 +68,21 @@ def order_to_response(order: EmployeeOrder) -> EmployeeOrderResponse:
 
 @router.get("/employees", response_model=list[EmployeeResponse])
 def list_employees(db: Session = Depends(get_db), _admin=Depends(get_admin)):
-    return db.query(Employee).order_by(Employee.created_at.desc()).all()
+    employees = db.query(Employee).options(
+        joinedload(Employee.assigned_tables).joinedload(EmployeeTable.table)
+    ).order_by(Employee.created_at.desc()).all()
+    return [to_employee_response(e) for e in employees]
 
 
 @router.post("/employees", response_model=EmployeeResponse, status_code=201)
 def create_employee(payload: EmployeeCreate, db: Session = Depends(get_db), _admin=Depends(get_admin)):
     if payload.table_id is not None:
         get_table_or_404(db, payload.table_id)
-
     employee = Employee(**payload.model_dump())
     db.add(employee)
     db.commit()
     db.refresh(employee)
-    return employee
+    return to_employee_response(employee)
 
 
 @router.patch("/employees/{employee_id}", response_model=EmployeeResponse)
@@ -74,12 +96,11 @@ def update_employee(
     data = payload.model_dump(exclude_unset=True)
     if data.get("table_id") is not None:
         get_table_or_404(db, data["table_id"])
-
     for field, value in data.items():
         setattr(employee, field, value)
     db.commit()
     db.refresh(employee)
-    return employee
+    return to_employee_response(employee)
 
 
 @router.post("/employees/{employee_id}/assign-table", response_model=EmployeeResponse)
@@ -95,7 +116,7 @@ def assign_employee_table(
     employee.table_id = payload.table_id
     db.commit()
     db.refresh(employee)
-    return employee
+    return to_employee_response(employee)
 
 
 @router.get("/employee-orders", response_model=list[EmployeeOrderResponse])
@@ -114,11 +135,9 @@ def create_employee_order(
     table = get_table_or_404(db, payload.table_id)
     if not payload.items:
         raise HTTPException(status_code=400, detail="Pedido vazio")
-
     total = sum(item.quantity * item.price for item in payload.items)
     if total <= 0:
         raise HTTPException(status_code=400, detail="Total do pedido invalido")
-
     next_number = db.query(EmployeeOrder).count() + 1
     order = EmployeeOrder(
         code=f"PD-{next_number:04d}",
@@ -140,20 +159,18 @@ def toggle_employee_table(
     db: Session = Depends(get_db),
     _admin=Depends(get_admin),
 ):
-    from app.models.models import EmployeeTable
     employee = get_employee_or_404(db, employee_id)
     get_table_or_404(db, table_id)
-
     existing = db.query(EmployeeTable).filter(
         EmployeeTable.employee_id == employee_id,
         EmployeeTable.table_id == table_id,
     ).first()
-
     if existing:
         db.delete(existing)
     else:
         db.add(EmployeeTable(employee_id=employee_id, table_id=table_id))
-
     db.commit()
-    db.refresh(employee)
-    return employee
+    employees = db.query(Employee).options(
+        joinedload(Employee.assigned_tables).joinedload(EmployeeTable.table)
+    ).filter(Employee.id == employee_id).first()
+    return to_employee_response(employees)
