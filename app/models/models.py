@@ -19,7 +19,7 @@ class TipoPreco(enum.Enum):
     preco_fixo = "preco_fixo"
 
 class RoleUsuario(enum.Enum):
-   admin = "admin"
+    admin = "admin"
     cliente = "cliente"
     client = "client"
     staff = "staff"
@@ -27,7 +27,7 @@ class RoleUsuario(enum.Enum):
     chefe_sala = "chefe_sala"
     chefe_cozinha = "chefe_cozinha"
     bar = "bar"
-    rececionista = "rececionista"
+    rececionista="rececionista"
 
 
 class EstadoParceiro(enum.Enum):
@@ -136,7 +136,7 @@ class Usuario(Base):
     email = Column(String, unique=True, nullable=False)
     telefone = Column(String, nullable=True)
     senha = Column(String, nullable=False)
-    role = Column(Enum(RoleUsuario), default=RoleUsuario.cliente)
+    role = Column(Enum(RoleUsuario, native_enum=False), default=RoleUsuario.cliente)
     criado_em = Column(DateTime, default=datetime.utcnow)
 
     reservas = relationship("Reserva", back_populates="usuario")
