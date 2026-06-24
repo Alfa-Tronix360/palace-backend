@@ -116,6 +116,14 @@ class PublishedEventBase(CamelModel):
     stage_label: str = "Palco"
     banner_url: Optional[str] = None
     base_price: float = 0
+    price_individual: float = 0
+    price_table: float = 0
+    price_table_with_consumption: float = 0
+    price_box: float = 0
+    price_box_with_consumption: float = 0
+    price_vip_individual: float = 0
+    price_vip_table: float = 0
+    price_vip_box: float = 0
 
 class PublishedEventCreate(PublishedEventBase):
     table_ids: Optional[list[int]] = None
@@ -129,7 +137,14 @@ class PublishedEventUpdate(CamelModel):
     banner_url: Optional[str] = None
     base_price: Optional[float] = None
     published: Optional[bool] = None
-
+    price_individual: Optional[float] = None
+    price_table: Optional[float] = None
+    price_table_with_consumption: Optional[float] = None
+    price_box: Optional[float] = None
+    price_box_with_consumption: Optional[float] = None
+    price_vip_individual: Optional[float] = None
+    price_vip_table: Optional[float] = None
+    price_vip_box: Optional[float] = None
 
 class PublishedEventResponse(PublishedEventBase):
     id: int

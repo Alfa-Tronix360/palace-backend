@@ -248,7 +248,14 @@ class PublishedEvent(Base):
     base_price = Column(Float, default=0.0, nullable=False)
     published = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    price_individual = Column(Float, default=0.0, nullable=False)
+    price_table = Column(Float, default=0.0, nullable=False)
+    price_table_with_consumption = Column(Float, default=0.0, nullable=False)
+    price_box = Column(Float, default=0.0, nullable=False)
+    price_box_with_consumption = Column(Float, default=0.0, nullable=False)
+    price_vip_individual = Column(Float, default=0.0, nullable=False)
+    price_vip_table = Column(Float, default=0.0, nullable=False)
+    price_vip_box = Column(Float, default=0.0, nullable=False)
     seats = relationship("EventSeat", back_populates="event", cascade="all, delete-orphan")
     tickets = relationship("DigitalTicket", back_populates="event")
 
