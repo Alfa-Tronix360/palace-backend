@@ -117,10 +117,8 @@ class PublishedEventBase(CamelModel):
     banner_url: Optional[str] = None
     base_price: float = 0
 
-
 class PublishedEventCreate(PublishedEventBase):
-    pass
-
+    table_ids: Optional[list[int]] = None
 
 class PublishedEventUpdate(CamelModel):
     title: Optional[str] = None

@@ -26,10 +26,13 @@ def get_event_or_404(db: Session, event_id: int) -> PublishedEvent:
     return event
 
 
-def sync_event_seats(db: Session, event: PublishedEvent):
+def sync_event_seats(db: Session, event: PublishedEvent, table_ids: Optional[list[int]] = None):
     if event.seats:
         return
-    tables = db.query(VenueTable).filter(VenueTable.company_id == event.company_id).order_by(VenueTable.number.asc()).all()
+    if table_ids:
+        tables = db.query(VenueTable).filter(VenueTable.id.in_(table_ids)).order_by(VenueTable.number.asc()).all()
+    else:
+        tables = db.query(VenueTable).filter(VenueTable.company_id == event.company_id).order_by(VenueTable.number.asc()).all()
     for table in tables:
         seat = EventSeat(
             event_id=event.id,
@@ -67,10 +70,14 @@ def create_event(
     _admin=Depends(get_admin),
 ):
     company_id = get_company_id(request, db)
-    event = PublishedEvent(**payload.model_dump(), company_id=company_id)
+    table_ids = payload.table_ids
+    event_data = payload.model_dump(exclude={'table_ids'})
+    event = PublishedEvent(**event_data, company_id=company_id)
     db.add(event)
     db.commit()
     db.refresh(event)
+    sync_event_seats(db, event, table_ids)
+    db.commit()
     return get_event_or_404(db, event.id)
 
 
