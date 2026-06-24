@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.core.dependencies import get_admin
 from app.core.tenant import get_company_id
+from typing import Optional
 from app.models.models import EventSeat, PublishedEvent, TicketSeatStatus, VenueTable
 from app.schemas.palace_schemas import (
     PublishedEventCreate,
@@ -124,3 +125,24 @@ def delete_event(event_id: int, db: Session = Depends(get_db), _admin=Depends(ge
     db.delete(event)
     db.commit()
     return {"message": "Evento eliminado com sucesso"}
+
+@router.patch("/{event_id}/seats/{seat_id}")
+def update_event_seat(
+    event_id: int,
+    seat_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    _admin=Depends(get_admin),
+):
+    seat = db.query(EventSeat).filter(
+        EventSeat.id == seat_id,
+        EventSeat.event_id == event_id,
+    ).first()
+    if not seat:
+        raise HTTPException(status_code=404, detail="Seat nao encontrada")
+    if 'x' in payload:
+        seat.x = payload['x']
+    if 'y' in payload:
+        seat.y = payload['y']
+    db.commit()
+    return {"id": seat.id, "x": seat.x, "y": seat.y}
