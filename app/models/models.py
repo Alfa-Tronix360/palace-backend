@@ -289,7 +289,7 @@ class DigitalTicket(Base):
     status = Column(Enum(TicketStatus), default=TicketStatus.valid, nullable=False)
     used_at = Column(DateTime, nullable=True)
     purchased_at = Column(DateTime, default=datetime.utcnow)
-
+    ticket_type = Column(String, default='individual', nullable=True)
     event = relationship("PublishedEvent", back_populates="tickets")
     client = relationship("Usuario")
     seat = relationship("EventSeat", back_populates="tickets")

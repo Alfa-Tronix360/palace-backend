@@ -45,7 +45,6 @@ def build_whatsapp_url(ticket: DigitalTicket, phone: str | None = None) -> str |
     )
     return f"https://wa.me/{digits}?text={quote(message)}"
 
-
 def ticket_to_response(ticket: DigitalTicket, delivery_status: str = "pending", phone: str | None = None) -> dict:
     return {
         "id": ticket.id,
@@ -56,6 +55,7 @@ def ticket_to_response(ticket: DigitalTicket, delivery_status: str = "pending", 
         "seat_id": ticket.seat_id,
         "table_number": ticket.seat.table_number if ticket.seat else ticket.seat_id,
         "price": ticket.price,
+        "ticket_type": ticket.ticket_type or 'individual',
         "qr_code": ticket.qr_code,
         "whatsapp_url": build_whatsapp_url(ticket, phone),
         "delivery_status": delivery_status,
@@ -63,7 +63,6 @@ def ticket_to_response(ticket: DigitalTicket, delivery_status: str = "pending", 
         "used_at": ticket.used_at,
         "purchased_at": ticket.purchased_at,
     }
-
 
 @router.post("/purchase", response_model=DigitalTicketResponse, status_code=201)
 def purchase_ticket(
@@ -86,13 +85,27 @@ def purchase_ticket(
     if seat.status != TicketSeatStatus.available:
         raise HTTPException(status_code=400, detail="Lugar indisponivel")
 
+    # Determina o preço baseado no tipo de entrada
+    price_map = {
+        'individual': event.price_individual,
+        'mesa': event.price_table,
+        'mesa_consumo': event.price_table_with_consumption,
+        'box': event.price_box,
+        'box_consumo': event.price_box_with_consumption,
+        'vip_individual': event.price_vip_individual,
+        'vip_mesa': event.price_vip_table,
+        'vip_box': event.price_vip_box,
+    }
+    ticket_price = payload.ticket_price or price_map.get(payload.ticket_type, seat.price) or seat.price
+
     ticket = DigitalTicket(
         event_id=event.id,
         client_id=usuario_atual.id,
         seat_id=seat.id,
-        price=seat.price,
+        price=ticket_price,
         qr_code=make_qr_code(),
         status=TicketStatus.valid,
+        ticket_type=payload.ticket_type,
     )
     seat.status = TicketSeatStatus.sold
     db.add(ticket)

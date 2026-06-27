@@ -155,6 +155,8 @@ class PublishedEventResponse(PublishedEventBase):
 class TicketPurchaseCreate(CamelModel):
     event_id: int
     seat_id: int
+    ticket_type: str = 'individual'
+    ticket_price: Optional[float] = None
 
 
 class TicketValidateCreate(CamelModel):
