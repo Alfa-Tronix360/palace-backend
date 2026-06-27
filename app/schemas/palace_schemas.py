@@ -172,12 +172,14 @@ class DigitalTicketResponse(CamelModel):
     seat_id: int
     table_number: int = 0
     price: float
+    ticket_type: str = 'individual'
     qr_code: str
     whatsapp_url: Optional[str] = None
     delivery_status: str = "pending"
     status: TicketStatus
     used_at: Optional[datetime]
     purchased_at: datetime
+    
 
 class TicketValidationResponse(CamelModel):
     valid: bool
