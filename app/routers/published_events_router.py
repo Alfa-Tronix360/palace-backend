@@ -126,6 +126,11 @@ def delete_event(event_id: int, db: Session = Depends(get_db), _admin=Depends(ge
     db.commit()
     return {"message": "Evento eliminado com sucesso"}
 
+@router.get("/{event_id}", response_model=PublishedEventResponse)
+def get_event(event_id: int, db: Session = Depends(get_db)):
+    return get_event_or_404(db, event_id)
+
+
 @router.patch("/{event_id}/seats/{seat_id}")
 def update_event_seat(
     event_id: int,
