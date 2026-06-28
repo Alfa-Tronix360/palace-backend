@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 import enum
+from sqlalchemy.dialects.postgresql import ARRAY
 
 class Company(Base):
     __tablename__ = "companies"
@@ -205,6 +206,7 @@ class MenuItem(Base):
     category = Column(Enum(MenuCategory), nullable=False)
     price = Column(Float, nullable=False)
     image_url = Column(String, nullable=True)
+    images = Column(ARRAY(String), default=[], nullable=True)
     available = Column(Boolean, default=True, nullable=False)
     featured = Column(Boolean, default=False, nullable=False)
     allergens_json = Column(Text, nullable=True)
