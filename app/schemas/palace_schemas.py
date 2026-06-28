@@ -321,6 +321,7 @@ class MenuItemBase(CamelModel):
     category: MenuCategory
     price: float
     image_url: Optional[str] = None
+    images: list[str] = []
     available: bool = True
     featured: bool = False
     allergens: list[str] = []
