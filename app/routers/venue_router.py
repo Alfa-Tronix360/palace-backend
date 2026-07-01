@@ -13,6 +13,7 @@ from app.schemas.palace_schemas import (
     VenueTableResponse,
     VenueTableUpdate,
 )
+from sqlalchemy import func
 
 router = APIRouter(prefix="/venue", tags=["Venue"])
 
@@ -84,13 +85,10 @@ def create_table(
     _admin=Depends(get_admin),
 ):
     company_id = get_company_id(request, db)
-    exists = db.query(VenueTable).filter(
-        VenueTable.number == payload.number,
-        VenueTable.company_id == company_id
-    ).first()
-    if exists:
-        raise HTTPException(status_code=400, detail="Numero de mesa ja existe")
-    table = VenueTable(**payload.model_dump(), company_id=company_id)
+    max_number = db.query(func.max(VenueTable.number)).filter(VenueTable.company_id == company_id).scalar() or 0
+    table_data = payload.model_dump()
+    table_data['number'] = max_number + 1
+    table = VenueTable(**table_data, company_id=company_id)
     db.add(table)
     db.commit()
     db.refresh(table)
