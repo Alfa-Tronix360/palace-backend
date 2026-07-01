@@ -87,18 +87,14 @@ def create_table(
     company_id = get_company_id(request, db)
     max_number = db.query(func.max(VenueTable.number)).filter(VenueTable.company_id == company_id).scalar() or 0
     table = VenueTable(
-    number=max_number + 1,
-    capacity=payload.capacity,
-    location=payload.location,
-    status=payload.status,
-    description=payload.description,
-    x=payload.x,
-    y=payload.y,
-    area_id=payload.area_id,
-    price_tier=payload.price_tier,
-    image_url=payload.image_url,
-    company_id=company_id,
-)
+        number=max_number + 1,
+        capacity=payload.capacity or 4,
+        location=payload.location or 'indoor',
+        status=payload.status or 'available',
+        x=payload.x or 50,
+        y=payload.y or 50,
+        company_id=company_id,
+    )
     db.add(table)
     db.commit()
     db.refresh(table)
