@@ -86,7 +86,7 @@ def create_table(
 ):
     company_id = get_company_id(request, db)
     max_number = db.query(func.max(VenueTable.number)).filter(VenueTable.company_id == company_id).scalar() or 0
-    table_data = payload.model_dump(exclude={'number'})
+    table_data = payload.model_dump(exclude={'number'}, by_alias=False)
     table_data['number'] = max_number + 1
     table = VenueTable(**table_data, company_id=company_id)
     db.add(table)
