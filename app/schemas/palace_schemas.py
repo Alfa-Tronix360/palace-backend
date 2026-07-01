@@ -61,7 +61,7 @@ class VenueAreaResponse(VenueAreaBase):
 
 
 class VenueTableBase(CamelModel):
-    number: int
+    number: Optional[int] = None
     capacity: int
     location: TableLocation = TableLocation.indoor
     status: TableStatus = TableStatus.available
